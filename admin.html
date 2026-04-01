@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PenguQuiz Admin 🐧</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a1628;
+      --bg2: #0f2040;
+      --card: #162035;
+      --red: #e74c3c;
+      --blue: #3498db;
+      --gold: #f1c40f;
+      --green: #2ecc71;
+      --white: #ffffff;
+      --gray: #8899aa;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* LOGIN */
+    .login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 1rem;
+    }
+    .login-screen h1 { font-size: 2.5rem; color: var(--gold); }
+    .login-box {
+      width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 16px;
+      border: 1px solid var(--gold);
+    }
+
+    input[type=password],
+    input[type=text],
+    input[type=number],
+    textarea,
+    select {
+      background: var(--bg2);
+      border: 2px solid var(--gray);
+      color: var(--white);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      width: 100%;
+      outline: none;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--gold); }
+    textarea { resize: vertical; }
+
+    .btn {
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      font-weight: 800;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      display: inline-block;
+      text-decoration: none;
+    }
+    .btn:hover { transform: scale(1.04); }
+    .btn.danger { background: var(--red); color: white; }
+    .btn.success { background: var(--green); color: white; }
+    .btn.sm { padding: 0.4rem 1rem; font-size: 0.85rem; border-radius: 20px; }
+    .btn.ghost { background: var(--card); color: var(--white); border: 2px solid var(--gray); }
+
+    /* LAYOUT */
+    .admin-layout { display: none; flex-direction: column; min-height: 100vh; }
+    .admin-layout.active { display: flex; }
+
+    .topbar {
+      background: var(--bg2);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 2px solid var(--gold);
+      flex-wrap: wrap;
+    }
+    .topbar h1 { font-size: 1.5rem; color: var(--gold); flex: 1; min-width: 200px; }
+
+    .tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tab {
+      background: var(--card);
+      border: 2px solid var(--gray);
+      color: var(--white);
+      padding: 0.55rem 1.4rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .tab.active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+    .tab:hover:not(.active) { border-color: var(--gold); }
+
+    .content { flex: 1; padding: 2rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.2rem;
+      border: 1px solid #1e3050;
+    }
+    .card h3 { color: var(--gold); margin-bottom: 1rem; font-size: 1.1rem; }
+
+    /* QUESTIONS */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+    label { font-size: 0.85rem; color: var(--gray); display: block; margin-bottom: 0.3rem; }
+
+    .correct-radio { display: flex; gap: 1.2rem; margin: 0.5rem 0; flex-wrap: wrap; }
+    .correct-radio label {
+      color: var(--white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 1rem;
+      padding: 0.4rem 0.8rem;
+      border: 2px solid var(--gray);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .correct-radio label:has(input:checked) { border-color: var(--green); background: #1a3020; }
+    .correct-radio input { accent-color: var(--green); }
+
+    .question-item {
+      background: var(--bg2);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+      border-left: 4px solid var(--gold);
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .question-item-body { flex: 1; }
+    .question-item p { font-size: 0.95rem; margin-bottom: 0.4rem; line-height: 1.5; }
+    .q-answers { font-size: 0.85rem; color: var(--gray); display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; }
+    .q-answers span.correct { color: var(--green); font-weight: 700; }
+    .q-num { font-size: 0.8rem; color: var(--gold); font-weight: 700; min-width: 28px; padding-top: 2px; }
+
+    /* STUDENTS */
+    .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; }
+    .student-chip {
+      background: var(--bg2);
+      border-radius: 8px;
+      padding: 0.55rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      gap: 0.5rem;
+    }
+    .del-btn {
+      background: none;
+      border: none;
+      color: var(--red);
+      cursor: pointer;
+      font-size: 1.3rem;
+      line-height: 1;
+      padding: 0 0.2rem;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .del-btn:hover { opacity: 1; }
+
+    /* MESSAGES */
+    .msg {
+      padding: 0.7rem 1rem;
+      border-radius: 8px;
+      margin-top: 0.6rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      min-height: 1rem;
+    }
+    .msg.ok { background: #1a4a2e; color: #2ecc71; }
+    .msg.err { background: #4a1a1a; color: #e74c3c; }
+
+    /* SETTINGS */
+    .settings-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .settings-row > label { font-size: 1rem; color: var(--white); }
+
+    footer {
+      text-align: center;
+      padding: 0.8rem;
+      color: var(--gray);
+      font-size: 0.85rem;
+      background: var(--bg2);
+      border-top: 1px solid #1e3050;
+    }
+
+    .badge-count {
+      background: var(--gold);
+      color: var(--bg);
+      border-radius: 12px;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+      margin-left: 0.3rem;
+    }
+
+    .search-bar {
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <h1>🐧 PenguQuiz Admin</h1>
+  <div class="login-box">
+    <label style="color:var(--white);font-size:1rem">Passwort</label>
+    <input type="password" id="pw-input" placeholder="Passwort eingeben..." autofocus
+      onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="btn" onclick="doLogin()">Anmelden 🔐</button>
+    <div id="login-err" style="color:var(--red);text-align:center;min-height:1.2rem;font-size:0.9rem"></div>
+  </div>
+</div>
+
+<!-- ADMIN LAYOUT -->
+<div class="admin-layout" id="admin-layout">
+  <div class="topbar">
+    <h1>🐧 PenguQuiz Admin</h1>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('questions')">Fragen <span id="q-count-badge" class="badge-count">0</span></button>
+      <button class="tab" onclick="switchTab('students')">Schüler <span id="s-count-badge" class="badge-count">0</span></button>
+      <button class="tab" onclick="switchTab('musik')">🎵 Musik</button>
+      <button class="tab" onclick="switchTab('settings')">Einstellungen</button>
+    </div>
+    <a href="index.html" class="btn sm" style="text-decoration:none">🎮 Zum Spiel</a>
+    <button class="btn sm danger" onclick="doLogout()">Abmelden</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== QUESTIONS PANEL ===== -->
+    <div class="panel active" id="panel-questions">
+
+      <div class="card">
+        <h3>➕ Neue Frage hinzufügen</h3>
+        <div class="settings-row">
+          <label>Szenario / Frage *</label>
+          <textarea id="new-scenario" rows="3" placeholder="Patientenszenario eingeben..."></textarea>
+        </div>
+        <div class="form-grid">
+          <div><label>Antwort A *</label><input type="text" id="new-a" placeholder="Antwort A"></div>
+          <div><label>Antwort B *</label><input type="text" id="new-b" placeholder="Antwort B"></div>
+          <div><label>Antwort C *</label><input type="text" id="new-c" placeholder="Antwort C"></div>
+          <div><label>Antwort D *</label><input type="text" id="new-d" placeholder="Antwort D"></div>
+        </div>
+        <label>Richtige Antwort *</label>
+        <div class="correct-radio">
+          <label><input type="radio" name="correct-new" value="A" checked> A</label>
+          <label><input type="radio" name="correct-new" value="B"> B</label>
+          <label><input type="radio" name="correct-new" value="C"> C</label>
+          <label><input type="radio" name="correct-new" value="D"> D</label>
+        </div>
+        <button class="btn success" onclick="addQuestion()" style="margin-top:0.5rem">Frage speichern ✅</button>
+        <div class="msg" id="q-msg"></div>
+      </div>
+
+      <div class="card">
+        <h3>📋 Alle Fragen (<span id="q-total">0</span>)</h3>
+        <div class="search-bar">
+          <input type="text" id="q-search" placeholder="🔍 Fragen durchsuchen..." oninput="renderQuestions()">
+        </div>
+        <div id="questions-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== STUDENTS PANEL ===== -->
+    <div class="panel" id="panel-students">
+      <div class="card">
+        <h3>➕ Schüler hinzufügen</h3>
+        <div style="display:flex;gap:0.8rem;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <label>Name</label>
+            <input type="text" id="new-student" placeholder="Vorname Nachname"
+              onkeydown="if(event.key==='Enter') addStudent()">
+          </div>
+          <button class="btn success" onclick="addStudent()">Hinzufügen ➕</button>
+        </div>
+        <div class="msg" id="s-msg"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+          <h3 style="margin:0">👥 Schülerliste <span id="student-count" class="badge-count">0</span></h3>
+          <button class="btn sm danger" onclick="resetStudents()">Auf Standard zurücksetzen</button>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="s-search" placeholder="🔍 Schüler suchen..." oninput="renderStudents()">
+        </div>
+        <div class="student-grid" id="student-grid"></div>
+      </div>
+    </div>
+
+    <!-- ===== MUSIK PANEL ===== -->
+    <div class="panel" id="panel-musik">
+      <div class="card">
+        <h3>🎵 Musik hochladen</h3>
+        <p style="color:var(--gray);font-size:0.9rem;margin-bottom:1rem">
+          Diese Lieder werden beim Drehen des Rades zufällig abgespielt.<br>
+          Unterstützte Formate: MP3, WAV, OGG, M4A<br>
+          <span style="color:var(--gold)">⚠️ Admin-Seite muss gleichzeitig geöffnet bleiben!</span>
+        </p>
+        <label>Musikdatei auswählen</label>
+        <input type="file" id="music-file-input" accept="audio/*" multiple
+          style="background:var(--bg2);border:2px dashed var(--gold);border-radius:8px;padding:1rem;cursor:pointer;color:var(--white);width:100%">
+        <button class="btn success" onclick="uploadSongs()" style="margin-top:0.8rem">Hochladen ⬆️</button>
+        <div class="msg" id="musik-msg"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 style="margin:0">🎶 Gespeicherte Lieder <span id="song-count-badge" class="badge-count">0</span></h3>
+          <button class="btn sm danger" onclick="clearAllSongs()">Alle löschen</button>
+        </div>
+        <div id="songs-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS PANEL ===== -->
+    <div class="panel" id="panel-settings">
+
+      <div class="card">
+        <h3>⏱️ Timer</h3>
+        <div class="settings-row">
+          <label>Sekunden pro Frage (Standard: 60)</label>
+          <input type="number" id="set-timer" min="10" max="300" value="60" style="width:120px">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>💬 Motivationssätze bei falscher Antwort</h3>
+        <label>Einen Satz pro Zeile</label>
+        <textarea id="set-motiv" rows="9"></textarea>
+      </div>
+
+      <div class="card">
+        <h3>🔒 Passwort ändern</h3>
+        <div class="form-grid">
+          <div>
+            <label>Neues Passwort</label>
+            <input type="password" id="set-pw" placeholder="Neues Passwort">
+          </div>
+          <div>
+            <label>Wiederholen</label>
+            <input type="password" id="set-pw2" placeholder="Passwort wiederholen">
+          </div>
+        </div>
+        <p style="color:var(--gray);font-size:0.85rem">Leer lassen um Passwort beizubehalten.</p>
+      </div>
+
+      <div class="card">
+        <h3>⚠️ Daten zurücksetzen</h3>
+        <p style="color:var(--gray);margin-bottom:1rem;font-size:0.9rem">Setzt alle Fragen und Schüler auf die ursprünglichen Standardwerte zurück.</p>
+        <button class="btn danger" onclick="resetAllData()">Alle Daten zurücksetzen 🗑️</button>
+      </div>
+
+      <button class="btn" onclick="saveSettings()">Einstellungen speichern 💾</button>
+      <div class="msg" id="set-msg"></div>
+    </div>
+
+  </div>
+  <footer>Diese Seite wurde von Mustafa Kömür erstellt 🐧</footer>
+</div>
+
+<script>
+// ============================================================
+// DEFAULT DATA (same as index.html for reset)
+// ============================================================
+const DEFAULT_STUDENTS = [
+  "Alida Kamwa","Ana Galeas","Angele Yvana","Anica Mahler","Arnaud Ntoutou",
+  "Atakan Senol","Axinia Erhardt","Bella Chiwaza","Besarta Peci","Cedrick Kana",
+  "Charnelle Noume","Christian Wanne","Danielle Maguim","Diura Rustamova",
+  "Elvisa Krasniqi","Emilia Kempf","Evrard Berlo","Gina Kacanja",
+  "Göksu Yildiz","Gyulben Radosla","Hilary Kenfack","Irina Arendt",
+  "Julia Buchmiller","Khusrav Abidov","Laure Miyague","Lea Schäfer",
+  "Lian Schnell","Lidiia Holovko","Loubna Diazal","Manuela Nzambo",
+  "Maria Carmela","Marie Asley","Mustafa Kömür","Müjde Akbulut",
+  "Nadine Benz","Natalie Bloos","Nazife Nur","Olga Jäger",
+  "Ottilia Okel","Patricia Damaschke","Petronella Toevs","Sally Tambeline",
+  "Sandra Paule","Soline Wokam","Sophia-Theresia","Stephane Talmi",
+  "Stéphane Weya","Suzan Kansiray","Vishalini Mohanraj","Yusuf Dernek"
+];
+
+const DEFAULT_SETTINGS = {
+  password: "admin123",
+  timerSeconds: 60,
+  motivationMessages: [
+    "Nicht aufgeben, du schaffst das!",
+    "Beim nächsten Mal klappt es bestimmt!",
+    "Fehler sind der Weg zum Erfolg!",
+    "Du gibst immer dein Bestes!",
+    "Kopf hoch, weiter geht's!",
+    "Das war knapp, aber du lernst daraus!",
+    "Bleib stark, du bist auf dem richtigen Weg!"
+  ]
+};
+
+// ============================================================
+// DATA ACCESS
+// ============================================================
+function getStudents() { return JSON.parse(localStorage.getItem('penguquiz_students') || '[]'); }
+function getQuestions() { return JSON.parse(localStorage.getItem('penguquiz_questions') || '[]'); }
+function getSettings() {
+  const stored = localStorage.getItem('penguquiz_settings');
+  return stored ? JSON.parse(stored) : { ...DEFAULT_SETTINGS };
+}
+function saveStudentsData(d) { localStorage.setItem('penguquiz_students', JSON.stringify(d)); }
+function saveQuestionsData(d) { localStorage.setItem('penguquiz_questions', JSON.stringify(d)); }
+function saveSettingsData(d) { localStorage.setItem('penguquiz_settings', JSON.stringify(d)); }
+
+// ============================================================
+// AUTH
+// ============================================================
+function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  const settings = getSettings();
+  if (pw === settings.password) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-layout').classList.add('active');
+    renderAll();
+  } else {
+    document.getElementById('login-err').textContent = 'Falsches Passwort! ❌';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function doLogout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-layout').classList.remove('active');
+  document.getElementById('pw-input').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+// ============================================================
+// TABS
+// ============================================================
+const TAB_NAMES = ['questions', 'students', 'musik', 'settings'];
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', TAB_NAMES[i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  renderAll();
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  renderQuestions();
+  renderStudents();
+  renderSettings();
+  renderSongs();
+  updateBadges();
+}
+
+function updateBadges() {
+  const qCount = getQuestions().length;
+  const sCount = getStudents().length;
+  const songCount = getSongs().length;
+  document.getElementById('q-count-badge').textContent = qCount;
+  document.getElementById('s-count-badge').textContent = sCount;
+  document.getElementById('q-total').textContent = qCount;
+  document.getElementById('student-count').textContent = sCount;
+  const sb = document.getElementById('song-count-badge');
+  if (sb) sb.textContent = songCount;
+}
+
+// ============================================================
+// MUSIK — Object URLs in memory + BroadcastChannel to index.html
+// ============================================================
+const adminBc = window.BroadcastChannel ? new BroadcastChannel('penguquiz') : null;
+let songList = []; // { name, url (objectURL) }
+
+function broadcastSongs() {
+  if (adminBc) adminBc.postMessage({ type: 'songs', songs: songList });
+  // Also save names to localStorage (for display only, not the data)
+  localStorage.setItem('penguquiz_song_names', JSON.stringify(songList.map(s => s.name)));
+}
+
+function uploadSongs() {
+  const input = document.getElementById('music-file-input');
+  const files = Array.from(input.files);
+  if (files.length === 0) { showMsg('musik-msg', 'Keine Datei ausgewählt! ⚠️', 'err'); return; }
+
+  files.forEach(file => {
+    const url = URL.createObjectURL(file);
+    songList.push({ name: file.name, url });
+  });
+
+  input.value = '';
+  broadcastSongs();
+  showMsg('musik-msg', `${files.length} Lied(er) geladen! ✅ (Solange diese Seite offen ist)`, 'ok');
+  renderSongs();
+  updateBadges();
+}
+
+function deleteSong(idx) {
+  if (!confirm(`"${songList[idx].name}" entfernen?`)) return;
+  URL.revokeObjectURL(songList[idx].url);
+  songList.splice(idx, 1);
+  broadcastSongs();
+  renderSongs();
+  updateBadges();
+}
+
+function clearAllSongs() {
+  if (!confirm('Alle Lieder entfernen?')) return;
+  songList.forEach(s => URL.revokeObjectURL(s.url));
+  songList = [];
+  broadcastSongs();
+  renderSongs();
+  updateBadges();
+}
+
+function getSongs() { return songList; }
+
+function renderSongs() {
+  const list = document.getElementById('songs-list');
+  if (!list) return;
+  if (songList.length === 0) {
+    list.innerHTML = '<p style="color:var(--gray);text-align:center;padding:1rem">Noch keine Lieder geladen.<br><span style="font-size:0.8rem">Lieder bleiben nur solange diese Seite offen ist.</span></p>';
+    return;
+  }
+  list.innerHTML = songList.map((s, i) => `
+    <div class="student-chip" style="margin-bottom:0.4rem">
+      <span>🎵 ${s.name}</span>
+      <button class="del-btn" onclick="deleteSong(${i})" title="Löschen">×</button>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// QUESTIONS
+// ============================================================
+function renderQuestions() {
+  const search = (document.getElementById('q-search')?.value || '').toLowerCase();
+  const questions = getQuestions();
+  const filtered = questions.map((q, i) => ({ ...q, _orig: i }))
+    .filter(q => !search || q.szenario.toLowerCase().includes(search) ||
+      q.antworten.some(a => a.toLowerCase().includes(search)));
+
+  const list = document.getElementById('questions-list');
+  if (!list) return;
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<p style="color:var(--gray);text-align:center;padding:1rem">Keine Fragen gefunden.</p>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(q => {
+    const answers = q.antworten.map((a, j) => {
+      const letter = ['A','B','C','D'][j];
+      const isCorrect = letter === q.korrekt;
+      return `<span class="${isCorrect ? 'correct' : ''}">${a}${isCorrect ? ' ✓' : ''}</span>`;
+    }).join('');
+
+    return `<div class="question-item">
+      <div class="q-num">${q._orig + 1}.</div>
+      <div class="question-item-body">
+        <p>${q.szenario}</p>
+        <div class="q-answers">${answers}</div>
+      </div>
+      <button class="btn danger sm" onclick="deleteQuestion(${q._orig})" style="flex-shrink:0">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addQuestion() {
+  const scenario = document.getElementById('new-scenario').value.trim();
+  const a = document.getElementById('new-a').value.trim();
+  const b = document.getElementById('new-b').value.trim();
+  const c = document.getElementById('new-c').value.trim();
+  const d = document.getElementById('new-d').value.trim();
+  const correct = document.querySelector('input[name="correct-new"]:checked').value;
+
+  if (!scenario || !a || !b || !c || !d) {
+    showMsg('q-msg', 'Bitte alle Felder ausfüllen! ⚠️', 'err');
+    return;
+  }
+
+  const questions = getQuestions();
+  questions.push({
+    szenario: scenario,
+    antworten: [`A) ${a}`, `B) ${b}`, `C) ${c}`, `D) ${d}`],
+    korrekt: correct
+  });
+  saveQuestionsData(questions);
+
+  // Clear form
+  document.getElementById('new-scenario').value = '';
+  ['new-a','new-b','new-c','new-d'].forEach(id => document.getElementById(id).value = '');
+  document.querySelector('input[name="correct-new"][value="A"]').checked = true;
+
+  showMsg('q-msg', 'Frage erfolgreich gespeichert! ✅', 'ok');
+  renderQuestions();
+  updateBadges();
+}
+
+function deleteQuestion(origIndex) {
+  if (!confirm(`Frage ${origIndex + 1} wirklich löschen?`)) return;
+  const questions = getQuestions();
+  questions.splice(origIndex, 1);
+  saveQuestionsData(questions);
+  renderQuestions();
+  updateBadges();
+}
+
+// ============================================================
+// STUDENTS
+// ============================================================
+function renderStudents() {
+  const search = (document.getElementById('s-search')?.value || '').toLowerCase();
+  const students = getStudents();
+  const filtered = students.map((s, i) => ({ name: s, idx: i }))
+    .filter(s => !search || s.name.toLowerCase().includes(search));
+
+  const grid = document.getElementById('student-grid');
+  if (!grid) return;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<p style="color:var(--gray);text-align:center;padding:1rem">Keine Schüler gefunden.</p>`;
+  } else {
+    grid.innerHTML = filtered.map(s =>
+      `<div class="student-chip">
+        <span>${s.name}</span>
+        <button class="del-btn" onclick="deleteStudent(${s.idx})" title="Löschen">×</button>
+      </div>`
+    ).join('');
+  }
+
+  document.getElementById('student-count').textContent = students.length;
+}
+
+function addStudent() {
+  const name = document.getElementById('new-student').value.trim();
+  if (!name) return;
+  const students = getStudents();
+  if (students.includes(name)) {
+    showMsg('s-msg', 'Dieser Name existiert bereits! ⚠️', 'err');
+    return;
+  }
+  students.push(name);
+  saveStudentsData(students);
+  document.getElementById('new-student').value = '';
+  document.getElementById('new-student').focus();
+  showMsg('s-msg', `"${name}" hinzugefügt! ✅`, 'ok');
+  renderStudents();
+  updateBadges();
+}
+
+function deleteStudent(idx) {
+  const students = getStudents();
+  if (!confirm(`"${students[idx]}" wirklich entfernen?`)) return;
+  students.splice(idx, 1);
+  saveStudentsData(students);
+  renderStudents();
+  updateBadges();
+}
+
+function resetStudents() {
+  if (!confirm('Schülerliste auf Standard zurücksetzen? Alle Änderungen gehen verloren!')) return;
+  saveStudentsData(DEFAULT_STUDENTS);
+  showMsg('s-msg', 'Schülerliste zurückgesetzt! ✅', 'ok');
+  renderStudents();
+  updateBadges();
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings() {
+  const s = getSettings();
+  const timerEl = document.getElementById('set-timer');
+  const motivEl = document.getElementById('set-motiv');
+  if (timerEl) timerEl.value = s.timerSeconds;
+  if (motivEl) motivEl.value = (s.motivationMessages || []).join('\n');
+}
+
+function saveSettings() {
+  const s = getSettings();
+  const newPw = document.getElementById('set-pw').value;
+  const newPw2 = document.getElementById('set-pw2').value;
+
+  if (newPw) {
+    if (newPw !== newPw2) {
+      showMsg('set-msg', 'Passwörter stimmen nicht überein! ❌', 'err');
+      return;
+    }
+    if (newPw.length < 4) {
+      showMsg('set-msg', 'Passwort muss mindestens 4 Zeichen haben! ❌', 'err');
+      return;
+    }
+    s.password = newPw;
+    document.getElementById('set-pw').value = '';
+    document.getElementById('set-pw2').value = '';
+  }
+
+  const timerVal = parseInt(document.getElementById('set-timer').value);
+  if (isNaN(timerVal) || timerVal < 10 || timerVal > 300) {
+    showMsg('set-msg', 'Timer muss zwischen 10 und 300 Sekunden sein! ❌', 'err');
+    return;
+  }
+  s.timerSeconds = timerVal;
+
+  const motivLines = document.getElementById('set-motiv').value
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+  if (motivLines.length === 0) {
+    showMsg('set-msg', 'Mindestens einen Motivationssatz eingeben! ❌', 'err');
+    return;
+  }
+  s.motivationMessages = motivLines;
+
+  saveSettingsData(s);
+  showMsg('set-msg', 'Einstellungen gespeichert! ✅', 'ok');
+}
+
+function resetAllData() {
+  if (!confirm('ACHTUNG: Alle Fragen und Schüler werden auf Standard zurückgesetzt. Fortfahren?')) return;
+  localStorage.removeItem('penguquiz_students');
+  localStorage.removeItem('penguquiz_questions');
+  localStorage.removeItem('penguquiz_settings');
+  // Reload to re-initialize
+  location.href = 'index.html';
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'msg ' + type;
+  el.textContent = text;
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => {
+    el.textContent = '';
+    el.className = 'msg';
+  }, 4000);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // If already have data in localStorage, still ask for password
+  // Just ensure data is initialized if needed
+  const pwInput = document.getElementById('pw-input');
+  if (pwInput) pwInput.focus();
+});
+</script>
+</body>
+</html>
